@@ -27,6 +27,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildx-
 
+    - name: Download and install InstallBuilder
+      run: |
+        wget https://releases.installbuilder.com/installbuilder/installbuilder-professional-24.3.0-linux-x64-installer.run
+        chmod +x installbuilder-professional-24.3.0-linux-x64-installer.run
+        ./installbuilder-professional-24.3.0-linux-x64-installer.run --mode unattended
+
     - name: Build Docker image
       run: docker build . -t xampp-build
 
