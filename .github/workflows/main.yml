@@ -27,21 +27,34 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildx-
 
-    - name: Download and install InstallBuilder
-      run: |
-        wget https://releases.installbuilder.com/installbuilder/installbuilder-professional-24.3.0-linux-x64-installer.run
-        chmod +x installbuilder-professional-24.3.0-linux-x64-installer.run
-        ./installbuilder-professional-24.3.0-linux-x64-installer.run --mode unattended
-
     - name: Build Docker image
-      run: docker build . -t xampp-build
+      run: |
+        cat <<EOF > Dockerfile
+        FROM ubuntu:20.04
+
+        RUN apt-get update && apt-get install -y \
+          curl \
+          && rm -rf /var/lib/apt/lists/*
+
+        ARG IB_VERSION=24.3.0
+        RUN curl -L -o installbuilder.run "https://releases.installbuilder.com/installbuilder/installbuilder-professional-\${IB_VERSION}-linux-x64-installer.run" \
+          && chmod 755 installbuilder.run \
+          && ./installbuilder.run --mode unattended --prefix /opt/installbuilder \
+          && rm installbuilder.run \
+          && ln -sf /opt/installbuilder /root/installbuilder-\${IB_VERSION}
+
+        COPY . /workspace
+        WORKDIR /workspace
+        EOF
+
+        docker build . -t xampp-build
 
     - name: Run build commands
       run: |
         docker run -v ${{ github.workspace }}/tarballs:/tmp/tarballs -v ${{ github.workspace }}/output:/opt/installbuilder/output -it xampp-build bash -c "\
           tclkit createstack.tcl buildTarball xamppunixinstaller80stack linux-x64 && \
           tclkit createstack.tcl pack xamppunixinstaller80stack linux-x64"
-      
+
     - name: Upload installers
       uses: actions/upload-artifact@v2
       with:
