@@ -51,7 +51,7 @@ jobs:
 
     - name: Run build commands
       run: |
-        docker run -v ${{ github.workspace }}/tarballs:/tmp/tarballs -v ${{ github.workspace }}/output:/opt/installbuilder/output -it xampp-build bash -c "\
+        docker run -v ${{ github.workspace }}/tarballs:/tmp/tarballs -v ${{ github.workspace }}/output:/opt/installbuilder/output xampp-build bash -c "\
           tclkit createstack.tcl buildTarball xamppunixinstaller80stack linux-x64 && \
           tclkit createstack.tcl pack xamppunixinstaller80stack linux-x64"
 
