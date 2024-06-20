@@ -1,10 +1,7 @@
-name: Build XAMPP
+name: Build XAMPP Installer
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
     branches:
       - main
 
@@ -13,50 +10,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - name: Setup environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf libtool pkg-config
 
-    - name: Cache Docker layers
-      uses: actions/cache@v2
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y wget unzip
+          wget https://apachefriends.org/xampp-files/xampp-linux-x64-7.4.4-0-installer.run
+          chmod +x xampp-linux-x64-7.4.4-0-installer.run
+          sudo ./xampp-linux-x64-7.4.4-0-installer.run
 
-    - name: Build Docker image
-      run: |
-        cat <<EOF > Dockerfile
-        FROM ubuntu:20.04
+      - name: Build XAMPP Installer
+        run: |
+          cd /path/to/xampp-build
+          ./build-xampp.sh
 
-        RUN apt-get update && apt-get install -y \
-          curl \
-          && rm -rf /var/lib/apt/lists/*
-
-        ARG IB_VERSION=24.3.0
-        RUN curl -L -o installbuilder.run "https://releases.installbuilder.com/installbuilder/installbuilder-professional-\${IB_VERSION}-linux-x64-installer.run" \
-          && chmod 755 installbuilder.run \
-          && ./installbuilder.run --mode unattended --prefix /opt/installbuilder \
-          && rm installbuilder.run \
-          && ln -sf /opt/installbuilder /root/installbuilder-\${IB_VERSION}
-
-        COPY . /workspace
-        WORKDIR /workspace
-        EOF
-
-        docker build . -t xampp-build
-
-    - name: Run build commands
-      run: |
-        docker run -v ${{ github.workspace }}/tarballs:/tmp/tarballs -v ${{ github.workspace }}/output:/opt/installbuilder/output xampp-build bash -c "\
-          tclkit createstack.tcl buildTarball xamppunixinstaller80stack linux-x64 && \
-          tclkit createstack.tcl pack xamppunixinstaller80stack linux-x64"
-
-    - name: Upload installers
-      uses: actions/upload-artifact@v2
-      with:
-        name: xampp-installers
-        path: /opt/installbuilder/output/
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: xampp-installer
+          path: /path/to/xampp-build/output/installer.exe
